@@ -5,12 +5,12 @@ from bot.handlers.other import register_other_handlers
 from bot.handlers.user import register_user_handlers
 
 
-def register_all_handlers(dp: Dispatcher, bot: Bot) -> None:
+def register_all_handlers(dp: Dispatcher) -> None:
     handlers = (
         register_admin_handlers,
         register_other_handlers,
     )
 
-    register_user_handlers(dp, bot)
+    register_user_handlers(dp)
     for handler in handlers:
         handler(dp)

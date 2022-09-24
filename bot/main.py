@@ -8,13 +8,13 @@ from bot.handlers import register_all_handlers
 from bot.database.models import register_models
 
 
-async def __on_start_up(dp: Dispatcher, bot: Bot) -> None:
+async def __on_start_up(dp: Dispatcher) -> None:
     register_all_filters(dp)
-    register_all_handlers(dp, bot)
+    register_all_handlers(dp)
     register_models()
 
 
 def start_bot():
     bot = Bot(token=TgKeys.TOKEN, parse_mode='HTML')
     dp = Dispatcher(bot, storage=MemoryStorage())
-    executor.start_polling(dp, skip_updates=True, on_startup=lambda x: __on_start_up(dp, bot))
+    executor.start_polling(dp, skip_updates=True, on_startup=__on_start_up)
