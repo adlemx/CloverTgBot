@@ -8,9 +8,11 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 #         )
 from bot.misc import env, TgKeys
 
+message_id = 0
 
 def register_user_handlers(dp: Dispatcher):
     # todo: register all user handlers
+
     @dp.message_handler(commands=['start', 'help'])
     async def send_welcome(message: types.Message):
         await message.answer("С помощью этого бота вы сможете заказать доставку дроном \n"
@@ -27,6 +29,7 @@ def register_user_handlers(dp: Dispatcher):
     @dp.message_handler(content_types=[types.ContentType.LOCATION])
     async def set_pos(message: types.Message):
         print(message.location)
+        message_id = message.message_id
         await message.answer(f'Ваша позиция: {message.location}')
 
 
