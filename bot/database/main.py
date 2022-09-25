@@ -1,9 +1,11 @@
 import sqlite3
 
+from bot.database.methods import create
+
 try:
     sqlite_connection = sqlite3.connect('sqlite_python.db')
     cursor = sqlite_connection.cursor()
-    print("База данных создана и успешно подключена к SQLite")
+    print("База данных успешно подключена к SQLite")
 
     sqlite_select_query = "select sqlite_version();"
     cursor.execute(sqlite_select_query)
@@ -17,3 +19,5 @@ finally:
     if (sqlite_connection):
         sqlite_connection.close()
         print("Соединение с SQLite закрыто")
+
+create.create_order(1, "23", "", "89633381082", 23)

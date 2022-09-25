@@ -2,7 +2,7 @@
 <project version="4">
   <component name="DBNavigator.Project.DataEditorManager">
     <record-view-column-sorting-type value="BY_INDEX" />
-    <value-preview-text-wrapping value="true" />
+    <value-preview-text-wrapping value="false" />
     <value-preview-pinned value="false" />
   </component>
   <component name="DBNavigator.Project.DataExportManager">
@@ -17,8 +17,8 @@
       <scope value="GLOBAL" />
       <destination value="FILE" />
       <format value="EXCEL" />
-      <charset value="UTF-8" />
-      <charset value="UTF-8" />
+      <charset value="windows-1251" />
+      <charset value="windows-1251" />
     </export-instructions>
   </component>
   <component name="DBNavigator.Project.DatabaseBrowserManager">
@@ -28,15 +28,20 @@
     <loaded-nodes />
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
-    <connection id="85d89c12-712c-4080-a26c-0f369caaccfd">
-      <console name="Connection" type="STANDARD" schema="main" session="Main"><![CDATA[PRAGMA integrity_check;]]></console>
+    <connection id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c">
+      <console name="Connection 1" type="STANDARD" schema="main" session="Main" />
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
     <open-files />
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
-    <connection id="85d89c12-712c-4080-a26c-0f369caaccfd" />
+    <connection id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" />
+  </component>
+  <component name="DBNavigator.Project.DatasetFilterManager">
+    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.users" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.sqlite_sequence" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.orders" active-filter-id="EMPTY_FILTER" />
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers />
@@ -67,9 +72,9 @@
   </component>
   <component name="DBNavigator.Project.Settings">
     <connections>
-      <connection id="85d89c12-712c-4080-a26c-0f369caaccfd" active="true" signed="true">
+      <connection id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" active="true" signed="true">
         <database>
-          <name value="Connection" />
+          <name value="Connection 1" />
           <description value="" />
           <database-type value="SQLITE" />
           <config-type value="BASIC" />
@@ -82,7 +87,7 @@
           <port value="" />
           <database value="" />
           <files>
-            <file path="$PROJECT_DIR$/bot/database/db.sqlite" schema="main" />
+            <file path="C:\Users\Andy\PycharmProjects\CloverTgBot\bot\database\db.sqlite3" schema="main" />
           </files>
           <type value="NONE" />
           <user value="" />
@@ -112,7 +117,7 @@
           <session-management value="true" />
           <ddl-file-binding value="true" />
           <database-logging value="true" />
-          <connect-automatically value="true" />
+          <connect-automatically value="false" />
           <restore-workspace value="true" />
           <restore-workspace-deep value="false" />
           <environment-type value="default" />
