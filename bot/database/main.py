@@ -1,6 +1,7 @@
 import sqlite3
 
-from bot.database.methods import create
+from bot.database.methods import create, update
+from bot.database.models.main import OrderStates
 
 try:
     sqlite_connection = sqlite3.connect('sqlite_python.db')
@@ -18,6 +19,3 @@ except sqlite3.Error as error:
 finally:
     if (sqlite_connection):
         sqlite_connection.close()
-        print("Соединение с SQLite закрыто")
-
-create.create_order(1, "23", "", "89633381082", 23)

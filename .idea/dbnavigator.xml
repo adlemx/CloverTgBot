@@ -17,8 +17,8 @@
       <scope value="GLOBAL" />
       <destination value="FILE" />
       <format value="EXCEL" />
-      <charset value="windows-1251" />
-      <charset value="windows-1251" />
+      <charset value="UTF-8" />
+      <charset value="UTF-8" />
     </export-instructions>
   </component>
   <component name="DBNavigator.Project.DatabaseBrowserManager">
@@ -29,7 +29,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c">
-      <console name="Connection 1" type="STANDARD" schema="main" session="Main" />
+      <console name="Connection 1" type="STANDARD" schema="" session="Main" />
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
@@ -37,11 +37,6 @@
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" />
-  </component>
-  <component name="DBNavigator.Project.DatasetFilterManager">
-    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.users" active-filter-id="EMPTY_FILTER" />
-    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.sqlite_sequence" active-filter-id="EMPTY_FILTER" />
-    <filter-actions connection-id="636dfdd2-be0f-4e50-863b-647a4a7ecf9c" dataset="main.orders" active-filter-id="EMPTY_FILTER" />
   </component>
   <component name="DBNavigator.Project.EditorStateManager">
     <last-used-providers />
