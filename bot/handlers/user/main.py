@@ -1,3 +1,7 @@
+import base64
+import io
+
+import qrcode
 from aiogram import Dispatcher, types, Bot
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, ContentType
 
@@ -7,10 +11,11 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 #             KeyboardButton('Отправить свою локацию 🗺️', request_location=True)
 #         )
 from bot.database.methods.create import create_order, create_user
-from bot.database.methods.get import get_product, get_user
+from bot.database.methods.get import get_product, get_user, get_order
 from bot.database.methods.update import change_order_state, set_address, set_phone
 from bot.database.models.main import OrderStates
 from bot.misc import env, TgKeys
+from bot.misc.util import generate_qr
 
 message_id = 0
 
@@ -34,9 +39,19 @@ def register_user_handlers(dp: Dispatcher):
 
     @dp.message_handler(content_types=[ContentType.LOCATION])
     async def set_pos(message: types.Message):
-        print(message.location)
-        message_id = message.message_id
-        await message.answer(f'Ваша позиция: {message.location}')
+        data = await dp.storage.get_data(chat=message.chat.id, user=message.from_user.id)
+        print(data)
+        if data.get("type") == "get_loc":
+            order_id = data.get("order_id")
+            await message.delete()
+            markup_request = InlineKeyboardMarkup(row_width=1) \
+                .add(InlineKeyboardButton('Оплатить', callback_data=f'order{order_id}'))
+            await dp.storage.set_data(chat=message.chat.id, user=message.from_user.id,
+                                      data={})
+            await dp.bot.edit_message_text("Отлично, теперь осталось только оплатить заказ",
+                                           message_id=data.get("msg_id"), reply_markup=markup_request,
+                                           chat_id=message.chat.id)
+            set_address(order_id, str(message.location))
 
     @dp.callback_query_handler(lambda c: c.data and c.data.startswith('product'))
     async def process_callback_preorder(callback_query: types.CallbackQuery):
@@ -45,7 +60,7 @@ def register_user_handlers(dp: Dispatcher):
         product = get_product(code)
         if product is None: return None
         markup_request = InlineKeyboardMarkup(row_width=1) \
-            .add(InlineKeyboardButton('Оплатить', callback_data=f'order{code}'))
+            .add(InlineKeyboardButton('Отправить геопозицию', callback_data=f'location{code}'))
         await dp.bot.edit_message_text(f"Ваш заказ:\n"
                                        f"Товар: {product.name}\n"
                                        f"Описание товара: {product.description}\n"
@@ -54,12 +69,22 @@ def register_user_handlers(dp: Dispatcher):
                                        chat_id=callback_query.message.chat.id,
                                        reply_markup=markup_request)
 
+    @dp.callback_query_handler(lambda c: c.data and c.data.startswith('location'))
+    async def process_callback_get_location(callback_query: types.CallbackQuery):
+        code = callback_query.data.replace('location', '')
+        if code.isdigit(): code = int(code)
+        order = create_order(callback_query.from_user.id, "", "", "", code)
+        await dp.storage.set_data(chat=callback_query.message.chat.id, user=callback_query.from_user.id,
+                                  data={'type': "get_loc", 'order_id': order.order_id,
+                                        'msg_id': callback_query.message.message_id})
+        await callback_query.message.edit_text("Жду адрес доставки")
+
     @dp.callback_query_handler(lambda c: c.data and c.data.startswith('order'))
     async def process_callback_preorder(callback_query: types.CallbackQuery):
         code = callback_query.data.replace('order', '')
         if code.isdigit(): code = int(code)
-        product = get_product(code)
-        order = create_order(callback_query.from_user.id, "", "", "", code)
+        order = get_order(code)
+        product = get_product(order.product)
         if product is None: return None
         PRICE = types.LabeledPrice(label=product.name, amount=product.price)
         await dp.bot.send_invoice(
@@ -85,11 +110,18 @@ def register_user_handlers(dp: Dispatcher):
 
     @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
     async def process_successful_payment(message: types.Message):
-        product_id = message.successful_payment.invoice_payload.replace('id', '')
-        change_order_state(int(product_id), OrderStates.ASSEMBLING)
-        set_address(int(product_id), "location")
-        set_phone(int(product_id), message.successful_payment.order_info.phone_number)
+        order_id = message.successful_payment.invoice_payload.replace('id', '')
+        change_order_state(int(order_id), OrderStates.ASSEMBLING)
+        set_address(int(order_id), "location")
+        set_phone(int(order_id), message.successful_payment.order_info.phone_number)
         print(message.successful_payment)
         print(message.location)
-        product = get_product(int(product_id))
+        order = get_order(int(order_id))
+        if order is None: return None
+        base = generate_qr(order.code)
+        base.seek(0)
+        await message.answer_photo(
+            photo=('qr.png', base),
+            caption="Получить посылку вы сможете по этому qr коду"
+        )
         await message.answer("Спасибо за покупку мы уже собираем ваш заказ")
