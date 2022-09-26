@@ -1,6 +1,6 @@
 import random
 import sqlite3
-from random import random
+import random
 
 from bot.database.models.order import Order
 from bot.database.models.user import User
@@ -10,7 +10,7 @@ def create_user(tg_id: int) -> User:
     try:
         sqlite_connection = sqlite3.connect('bot/database/db.sqlite3')
         cursor = sqlite_connection.cursor()
-        cursor.execute(f"INSERT INTO users VALUES(0, {tg_id})")
+        cursor.execute(f"INSERT INTO users VALUES({tg_id}, 0)")
         sqlite_connection.commit()
         cursor.close()
 

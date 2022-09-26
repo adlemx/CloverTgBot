@@ -6,7 +6,10 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 #         ).add(
 #             KeyboardButton('Отправить свою локацию 🗺️', request_location=True)
 #         )
-from bot.database.methods.get import get_product
+from bot.database.methods.create import create_order, create_user
+from bot.database.methods.get import get_product, get_user
+from bot.database.methods.update import change_order_state, set_address, set_phone
+from bot.database.models.main import OrderStates
 from bot.misc import env, TgKeys
 
 message_id = 0
@@ -15,6 +18,9 @@ message_id = 0
 def register_user_handlers(dp: Dispatcher):
     @dp.message_handler(commands=['start', 'help'])
     async def send_welcome(message: types.Message):
+        user = get_user(message.from_user.id)
+        if user is None: user = create_user(message.from_user.id)
+        print(user.orders)
         await message.answer("С помощью этого бота вы сможете заказать доставку дроном \n"
                              "для заказа напишите /order")
 
@@ -53,6 +59,7 @@ def register_user_handlers(dp: Dispatcher):
         code = callback_query.data.replace('order', '')
         if code.isdigit(): code = int(code)
         product = get_product(code)
+        order = create_order(callback_query.from_user.id, "", "", "", code)
         if product is None: return None
         PRICE = types.LabeledPrice(label=product.name, amount=product.price)
         await dp.bot.send_invoice(
@@ -66,19 +73,23 @@ def register_user_handlers(dp: Dispatcher):
             is_flexible=False,  # True если конечная цена зависит от способа доставки
             prices=[PRICE],
             start_parameter=f'{code}',
-            payload=f'pay{code}'
+            payload=f'id{order.order_id}'
         )
 
     @dp.pre_checkout_query_handler(lambda query: True)
     async def pre_check_out(pre_checkout_query: types.PreCheckoutQuery):
+        product_id = pre_checkout_query.invoice_payload.replace('id', '')
+        change_order_state(int(product_id), OrderStates.PAYMENT_REQUIRED)
         print("payed")
         await dp.bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
     @dp.message_handler(content_types=ContentType.SUCCESSFUL_PAYMENT)
     async def process_successful_payment(message: types.Message):
-        product_id = message.successful_payment.invoice_payload.replace('pay', '')
+        product_id = message.successful_payment.invoice_payload.replace('id', '')
+        change_order_state(int(product_id), OrderStates.ASSEMBLING)
+        set_address(int(product_id), "location")
+        set_phone(int(product_id), message.successful_payment.order_info.phone_number)
         print(message.successful_payment)
         print(message.location)
         product = get_product(int(product_id))
-        await message.answer("Спасибо за покупку мы уже собираем ваш заказ\n"
-                             f"В посылке: {product.name}")
+        await message.answer("Спасибо за покупку мы уже собираем ваш заказ")
