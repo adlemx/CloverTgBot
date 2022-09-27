@@ -12,15 +12,18 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardBut
 #         )
 from bot.database.methods.create import create_order, create_user
 from bot.database.methods.get import get_product, get_user, get_order
-from bot.database.methods.update import change_order_state, set_address, set_phone
+from bot.database.methods.update import change_order_state, set_address, set_phone, new_order
 from bot.database.models.main import OrderStates
 from bot.misc import env, TgKeys
 from bot.misc.util import generate_qr
 
 message_id = 0
+disp: Dispatcher
 
 
 def register_user_handlers(dp: Dispatcher):
+    disp = dp
+
     @dp.message_handler(commands=['start', 'help'])
     async def send_welcome(message: types.Message):
         user = get_user(message.from_user.id)
@@ -46,12 +49,12 @@ def register_user_handlers(dp: Dispatcher):
             await message.delete()
             markup_request = InlineKeyboardMarkup(row_width=1) \
                 .add(InlineKeyboardButton('Оплатить', callback_data=f'order{order_id}'))
+            set_address(order_id, str(message.location))
             await dp.storage.set_data(chat=message.chat.id, user=message.from_user.id,
                                       data={})
             await dp.bot.edit_message_text("Отлично, теперь осталось только оплатить заказ",
                                            message_id=data.get("msg_id"), reply_markup=markup_request,
                                            chat_id=message.chat.id)
-            set_address(order_id, str(message.location))
 
     @dp.callback_query_handler(lambda c: c.data and c.data.startswith('product'))
     async def process_callback_preorder(callback_query: types.CallbackQuery):
@@ -112,7 +115,6 @@ def register_user_handlers(dp: Dispatcher):
     async def process_successful_payment(message: types.Message):
         order_id = message.successful_payment.invoice_payload.replace('id', '')
         change_order_state(int(order_id), OrderStates.ASSEMBLING)
-        set_address(int(order_id), "location")
         set_phone(int(order_id), message.successful_payment.order_info.phone_number)
         print(message.successful_payment)
         print(message.location)
@@ -125,3 +127,22 @@ def register_user_handlers(dp: Dispatcher):
             caption="Получить посылку вы сможете по этому qr коду"
         )
         await message.answer("Спасибо за покупку мы уже собираем ваш заказ")
+
+
+def delivery_started(order_id: int):
+    order = get_order(order_id)
+    if order is None: return None
+    change_order_state(order_id, OrderStates.DELIVERY)
+    disp.bot.send_message(order.tg_id, "Ваш заказ уже отправлен")
+
+
+def check_code(order_id: int, code: int):
+    order = get_order(order_id)
+    if order is None: return None
+    if order.code == code:
+        change_order_state(order_id, OrderStates.DONE)
+        disp.bot.send_message(order.tg_id, "Заказ получен")
+        new_order(order.tg_id)
+    else:
+        disp.bot.send_message(order.tg_id, "Вы использовали не тот qr code для получения посылки")
+
