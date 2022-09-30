@@ -40,21 +40,26 @@ def register_user_handlers(dp: Dispatcher):
             .add(InlineKeyboardButton('3', callback_data='product3'))
         await message.answer("Выберите товар который вы хотите заказать", reply_markup=markup_request)
 
+    @dp.edited_message_handler(content_types=[ContentType.LOCATION])
+    async def upd(message: types.Message):
+        data = await dp.storage.get_data(chat=message.chat.id, user=message.from_user.id)
+        if data.get("type") == "upd_loc":
+            order_id = data.get("order_id")
+            set_address(order_id, str(message.location))
+
+
     @dp.message_handler(content_types=[ContentType.LOCATION])
     async def set_pos(message: types.Message):
         data = await dp.storage.get_data(chat=message.chat.id, user=message.from_user.id)
         print(data)
         if data.get("type") == "get_loc":
             order_id = data.get("order_id")
-            await message.delete()
             markup_request = InlineKeyboardMarkup(row_width=1) \
                 .add(InlineKeyboardButton('Оплатить', callback_data=f'order{order_id}'))
             set_address(order_id, str(message.location))
             await dp.storage.set_data(chat=message.chat.id, user=message.from_user.id,
-                                      data={})
-            await dp.bot.edit_message_text("Отлично, теперь осталось только оплатить заказ",
-                                           message_id=data.get("msg_id"), reply_markup=markup_request,
-                                           chat_id=message.chat.id)
+                                      data={'type': "upd_loc", 'order_id': order_id})
+            await dp.bot.send_message(chat_id=message.chat.id, text="Отлично, теперь осталось только оплатить заказ", reply_markup=markup_request)
 
     @dp.callback_query_handler(lambda c: c.data and c.data.startswith('product'))
     async def process_callback_preorder(callback_query: types.CallbackQuery):
@@ -133,7 +138,7 @@ def delivery_started(order_id: int):
     order = get_order(order_id)
     if order is None: return None
     change_order_state(order_id, OrderStates.DELIVERY)
-    disp.bot.send_message(order.tg_id, "Ваш заказ уже отправлен")
+    disp.bot.send_message(order.tg_id, "Ваш заказ отправлен")
 
 
 def check_code(order_id: int, code: int):

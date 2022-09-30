@@ -9,4 +9,5 @@ async def echo(msg: Message):
 
 def register_other_handlers(dp: Dispatcher) -> None:
     # todo: register all other handlers
-    dp.register_message_handler(echo, content_types=['text'])
+    pass
+    #dp.register_message_handler(echo, content_types=['text'])
