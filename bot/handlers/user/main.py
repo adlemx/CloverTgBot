@@ -1,5 +1,7 @@
+import asyncio
 import base64
 import io
+from threading import Timer
 
 import qrcode
 from aiogram import Dispatcher, types, Bot
@@ -19,9 +21,11 @@ from bot.misc.util import generate_qr
 
 message_id = 0
 disp: Dispatcher
+loop = asyncio.get_event_loop()
 
 
 def register_user_handlers(dp: Dispatcher):
+    global disp
     disp = dp
 
     @dp.message_handler(commands=['start', 'help'])
@@ -47,7 +51,6 @@ def register_user_handlers(dp: Dispatcher):
             order_id = data.get("order_id")
             set_address(order_id, str(message.location))
 
-
     @dp.message_handler(content_types=[ContentType.LOCATION])
     async def set_pos(message: types.Message):
         data = await dp.storage.get_data(chat=message.chat.id, user=message.from_user.id)
@@ -59,7 +62,8 @@ def register_user_handlers(dp: Dispatcher):
             set_address(order_id, str(message.location))
             await dp.storage.set_data(chat=message.chat.id, user=message.from_user.id,
                                       data={'type': "upd_loc", 'order_id': order_id})
-            await dp.bot.send_message(chat_id=message.chat.id, text="Отлично, теперь осталось только оплатить заказ", reply_markup=markup_request)
+            await dp.bot.send_message(chat_id=message.chat.id, text="Отлично, теперь осталось только оплатить заказ",
+                                      reply_markup=markup_request)
 
     @dp.callback_query_handler(lambda c: c.data and c.data.startswith('product'))
     async def process_callback_preorder(callback_query: types.CallbackQuery):
@@ -132,22 +136,23 @@ def register_user_handlers(dp: Dispatcher):
             caption="Получить посылку вы сможете по этому qr коду"
         )
         await message.answer("Спасибо за покупку мы уже собираем ваш заказ")
+        t = loop.call_later(10.0, lambda: asyncio.ensure_future(delivery_started(order.order_id)))
 
 
-def delivery_started(order_id: int):
+async def delivery_started(order_id: int):
     order = get_order(order_id)
     if order is None: return None
     change_order_state(order_id, OrderStates.DELIVERY)
-    disp.bot.send_message(order.tg_id, "Ваш заказ отправлен")
+    await disp.bot.send_message(order.tg_id, "Ваш заказ отправлен")
+    t = loop.call_later(30.0, lambda: asyncio.ensure_future(check_code(order_id, order.code)))
 
 
-def check_code(order_id: int, code: int):
+async def check_code(order_id: int, code: int):
     order = get_order(order_id)
     if order is None: return None
     if order.code == code:
         change_order_state(order_id, OrderStates.DONE)
-        disp.bot.send_message(order.tg_id, "Заказ получен")
+        await disp.bot.send_message(order.tg_id, "Заказ получен, можете оставить отзыв")
         new_order(order.tg_id)
     else:
-        disp.bot.send_message(order.tg_id, "Вы использовали не тот qr code для получения посылки")
-
+        await disp.bot.send_message(order.tg_id, "Вы использовали не тот qr code для получения посылки")
